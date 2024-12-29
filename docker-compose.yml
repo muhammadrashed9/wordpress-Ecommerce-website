@@ -1,6 +1,47 @@
-version: '3.1'
-
 services:
+  # WordPress Service
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-site
+    expose:
+      - "80"  # Expose port 80 internally, not to the host
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: example
+    volumes:
+      - ./wordpress_data:/var/www/html
+    networks:
+      - wordpress_network
+
+  # Apache Service
+  apache:
+    image: httpd:latest
+    container_name: apache-server
+    ports:
+      - "80:80"  # Expose Apache on port 80
+    volumes:
+      - ./apache-config.conf:/usr/local/apache2/conf/httpd.conf  # Custom Apache config
+    depends_on:
+      - wordpress
+    networks:
+      - wordpress_network
+
+  # MySQL Service for WordPress
+  db:
+    image: mysql:5.7
+    container_name: wordpress-db
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    networks:
+      - wordpress_network
 
   # Jenkins Service
   jenkins:
@@ -14,6 +55,8 @@ services:
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
     restart: always
+    networks:
+      - wordpress_network
 
   # Prometheus Service
   prometheus:
@@ -24,6 +67,8 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     restart: always
+    networks:
+      - wordpress_network
 
   # Grafana Service
   grafana:
@@ -34,6 +79,14 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     restart: always
+    networks:
+      - wordpress_network
 
 volumes:
+  wordpress_data:
+  mysql_data:
   jenkins_home:
+
+networks:
+  wordpress_network:
+    driver: bridge

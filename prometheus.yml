@@ -5,3 +5,7 @@ scrape_configs:
   - job_name: 'jenkins'
     static_configs:
       - targets: ['jenkins-server:8080']
+
+  - job_name: 'wordpress'
+    static_configs:
+      - targets: ['wordpress:80']  # Replace with your WordPress container name or IP address and port
